@@ -9,8 +9,7 @@ import (
 func main() {
 	shutdown := make(chan bool)
 	server := cs.NewDummyServer()
-	conCh := make(chan cs.Connection)
-	startServer(server, conCh)
+	startServer(server)
 	registerClients(server)
 	<-shutdown
 }
@@ -22,7 +21,7 @@ func registerClients(server *cs.DummyServer) {
 	server.Accept(client2.Connection())
 }
 
-func startServer(server cs.Server, ch <-chan cs.Connection) {
+func startServer(server cs.Server) {
 	pingClients(server)
 }
 
