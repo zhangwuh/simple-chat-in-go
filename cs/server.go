@@ -2,28 +2,27 @@ package cs
 
 import (
 	"fmt"
-	"io"
 )
 
 type Connection interface {
 	Id() string
 	Read() chan Message
-	io.Writer
+	Write(msg Message)
 	Close()
 }
 
 type Message struct {
-	sequence int
 	content []byte
+	target  string
 }
 
-func NewMessage(seq int, content []byte) Message {
-	return Message{seq, content}
+func NewMessage(content []byte, target string) Message {
+	return Message{content, target}
 }
 
 type DummyConnection struct {
-	id string
-	ch chan Message
+	id  string
+	ch  chan Message
 	seq int
 }
 
@@ -39,16 +38,15 @@ func (con *DummyConnection) Read() chan Message {
 	return con.ch
 }
 
-func  (con *DummyConnection) Write(p []byte) (n int, err error) {
-	msg := NewMessage(con.seq, p)
+func (con *DummyConnection) Write(message Message) {
+	msg := NewMessage(message.content, "")
 	defer func() {
 		con.seq++
 	}()
 	con.ch <- msg
-	return len(p), nil
 }
 
-func  (con *DummyConnection) Close() {
+func (con *DummyConnection) Close() {
 	close(con.ch)
 	fmt.Println(fmt.Sprintf("connection %s closed", con.Id()))
 }
@@ -58,19 +56,29 @@ type Server interface {
 	GetConnection(id string) Connection
 	Accept(con Connection)
 	Close(con Connection)
+	Receive(msg Message)
 }
 
 type DummyServer struct {
 	connections map[string]Connection
+	ch          chan Message
 }
 
 func NewDummyServer() *DummyServer {
 	return &DummyServer{connections: map[string]Connection{}}
 }
 
+func (ds *DummyServer) Receive(msg Message) {
+	for _, c := range ds.connections {
+		if c.Id() == msg.target {
+			c.Write(msg)
+		}
+	}
+}
+
 func (ds *DummyServer) Connections() []Connection {
 	var conns []Connection
-	for _ , v := range ds.connections {
+	for _, v := range ds.connections {
 		conns = append(conns, v)
 	}
 	return conns
@@ -87,7 +95,7 @@ func (ds *DummyServer) GetConnection(id string) Connection {
 func (ds *DummyServer) Close(con Connection) {
 	defer func() {
 		if ds.GetConnection(con.Id()) != nil {
-			delete(ds.connections,con.Id())
+			delete(ds.connections, con.Id())
 		}
 	}()
 	con.Close()

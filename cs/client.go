@@ -11,16 +11,16 @@ type DummyClient struct {
 	connection Connection
 }
 
-func NewDummyClient(conn Connection) *DummyClient{
+func NewDummyClient(conn Connection) *DummyClient {
 	defer func() {
 		go func() {
 			for {
 				select {
-				case msg, ok :=<- conn.Read():
+				case msg, ok := <-conn.Read():
 					if !ok {
 						return
 					}
-					fmt.Println(fmt.Sprintf("[%s:%d]msg from server:%s", conn.Id(), msg.sequence, string(msg.content)))
+					fmt.Println(fmt.Sprintf("[%s]msg from server:%s", conn.Id(), string(msg.content)))
 				}
 			}
 		}()

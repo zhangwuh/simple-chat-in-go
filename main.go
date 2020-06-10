@@ -6,8 +6,6 @@ import (
 	"github.com/zhangwuh/simple-chat-in-go/cs"
 )
 
-
-
 func main() {
 	shutdown := make(chan bool)
 	server := cs.NewDummyServer()
@@ -24,7 +22,6 @@ func registerClients(server *cs.DummyServer) {
 	server.Accept(client2.Connection())
 }
 
-
 func startServer(server cs.Server, ch <-chan cs.Connection) {
 	pingClients(server)
 }
@@ -36,7 +33,7 @@ func pingClients(server cs.Server) {
 			select {
 			case <-ticker.C:
 				for _, c := range server.Connections() {
-					go c.Write([]byte("hello from server"))
+					go c.Write(cs.NewMessage([]byte("hello"), "client1"))
 				}
 			}
 		}
